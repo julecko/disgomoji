@@ -34,6 +34,7 @@ Bellow are listed avaible command to which Disgomoji listens:
 
 ## Instalation
 > run: go run main.go
+
 > compile: go build main.go
 
 ## Testing
