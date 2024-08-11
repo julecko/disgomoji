@@ -49,13 +49,14 @@ Some parts are coppied from discord-c2 as this malware is inspired by
 - [x] Add command ☝️
 - [x] Add command 👉
 - [x] Add command 👈
-- [ ] Add command 🔥
+- [x] Add command 🔥
 - [ ] Add command 🦊
 - [x] Add command 💀
 - [ ] Create DirtyPipe exploit
 - [ ] Create cron persistence
 - [ ] Create uevent_seqnum.sh
 - [ ] Optimalization
+- [ ] Comments
 
 ## Resources
 - [Volexity.com](https://www.volexity.com/blog/2024/06/13/disgomoji-malware-used-to-target-indian-government)

