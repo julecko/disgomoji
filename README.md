@@ -40,6 +40,7 @@ Bellow are listed avaible command to which Disgomoji listens:
 ## Testing
 Right now project is tested on windows but later switch to linux, as original disgomoji was made for
 Some parts are coppied from discord-c2 as this malware is inspired by
+**Sadly i found out, that transfer.sh is currently not avaible, instead of it i will be using temp.sh**
 
 - [x] Add sending startup message
 - [x] Add command 🏃‍♂️
@@ -47,7 +48,7 @@ Some parts are coppied from discord-c2 as this malware is inspired by
 - [x] Add command 👇
 - [x] Add command ☝️
 - [x] Add command 👉
-- [ ] Add command 👈
+- [x] Add command 👈
 - [ ] Add command 🔥
 - [ ] Add command 🦊
 - [x] Add command 💀
