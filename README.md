@@ -54,7 +54,7 @@ Some parts are coppied from discord-c2 as this malware is inspired by
 - [x] Add command 💀
 - [ ] Create DirtyPipe exploit
 - [ ] Create cron persistence
-- [ ] Create uevent_seqnum.sh
+- [x] Create uevent_seqnum.sh
 - [ ] Optimalization
 - [ ] Comments
 
