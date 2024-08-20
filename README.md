@@ -44,7 +44,7 @@ Some parts are coppied from discord-c2 as this malware is inspired by
 
 - [x] Add sending startup message
 - [x] Add command 🏃‍♂️
-- [ ] Add command 📸
+- [+] Add command 📸
 - [x] Add command 👇
 - [x] Add command ☝️
 - [x] Add command 👉
@@ -53,7 +53,7 @@ Some parts are coppied from discord-c2 as this malware is inspired by
 - [ ] Add command 🦊
 - [x] Add command 💀
 - [ ] Create DirtyPipe exploit
-- [ ] Create cron persistence
+- [+] Create cron persistence
 - [x] Create uevent_seqnum.sh
 - [ ] Optimalization
 - [ ] Comments
